@@ -1,4 +1,4 @@
-# Mstock: Information System to Construct Portfolios
+# Mstock: Information System to Construct Portfolios under Risk
 
 *Gabriel Zhang*
 
@@ -13,7 +13,16 @@ Background: Beihang University/School of Economy and Management/Information Mana
 Use the powershell commands in the root folder.
 
 ```powershell
- .\\myvenv\Scripts\Activate.ps1
+python -m venv myvenv
+.\\myvenv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+If that does not works, you can try
+
+```powershell
+pip install virtualenv
+virtualenv myvenv --python=python3.9
 ```
 
 ## Initiate System

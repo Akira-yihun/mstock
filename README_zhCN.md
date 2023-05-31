@@ -13,7 +13,16 @@
 在根目录下打开powershell并使用以下命令进入虚拟环境
 
 ```powershell
- .\\myvenv\Scripts\Activate.ps1
+python -m venv myvenv
+.\\myvenv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+如果出现任何由Python版本导致的问题，可以尝试使用Python3.9版本
+
+```powershell
+pip install virtualenv
+virtualenv myvenv --python=python3.9
 ```
 
 ## 系统初始化
