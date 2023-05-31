@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+{% block title %}公无渡河（；´д｀）ゞ{% endblock %}
+
+{% block content %}
+
+<div class="container">
+  {% if current_user.is_authenticated %}
+  <h2>Hello, {{ current_user.username }}!</h2>
+  {% else %}
+  <h2>Hello, come and join us!</h2>
+  {% endif %}
+</div>
+
+<div class="container">
+  <form class="form" method="post">
+    {{ form.hidden_tag() }}
+    <div class="row mb-3">
+      <label for="stockid" class="col-sm-2 col-form-label d-flex justify-content-center text-primary-emphasis bg-primary-subtle border border-primary-subtle rounded-3">{{ form.stockid.label }}</label>
+      <div class="col-sm-6">{{ form.stockid(type='text', class='form-control', id='stockid') }}</div>
+      <div class="col-sm-2">{{ form.submit(class='btn btn-primary') }}</div>
+      {% if (form.stockid.errors | length) != 0 %}
+      <div class="col-sm-2 d-flex align-items-center text-danger-emphasis bg-danger-subtle border border-danger-subtle rounded-3">
+          {% for error in form.stockid.errors %}
+            {{ error }}<br>
+          {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<div class="container">
+  <form method="post" action="{{ url_for('main.stock_analysis') }}">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>股票代码</th>
+          <th>股票名称</th>
+          <th>股票类别</th>
+          <th>交易天数</th>
+          {% if current_user.is_authenticated %}
+          <th>删除</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for stock in stocks %}
+        <tr>
+          <td><input type="checkbox" class="form-check-input" name="astock" value="{{ stock.stockid }}"></td>
+          <th>
+            <a href="{{ url_for('main.stock_detail', stockid = stock.stockid) }}" target="_blank">
+              {{ stock.stockid }}
+            </a>
+          </th>
+          <td>{{ stock.stockname }}</td>
+          <td>{{ stock.stocktype }}</td>
+          <td>{{ stock.closes.count() }}</td>
+          {% if current_user.is_authenticated %}
+          <td>      
+            <a href="{{ url_for('main.stock_delete', stockid = stock.stockid) }}">
+              <i class="bi bi-x-circle"></i>
+            </a>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor%}
+      </tbody>
+    </table>
+    <div class="row mb-3">
+      <label for="days" class="col-sm-2 col-form-label">交易天数</label>
+      <div class="col-sm-4">
+        <input required type="number" class="form-control" value="100" id="days" name="days" min="100" oninput="if(value<100)value=100;">
+      </div>
+      <div class="col-sm-6 d-flex justify-content-center">
+        <button type="submit" class="btn btn-primary">分析</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

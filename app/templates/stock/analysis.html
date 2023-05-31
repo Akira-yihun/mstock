@@ -1,0 +1,342 @@
+{% extends "base.html" %}
+{% block title %}Analysis{% endblock %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.2/dist/echarts.min.js"></script>
+<!--<script src="https://cdn.plot.ly/plotly-2.20.0.min.js" charset="utf-8"></script>-->
+<script src="https://cdn.jsdelivr.net/npm/plotly.js@2.22.0/dist/plotly.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<div hidden class="container">
+  <table class="table" id="riskdata">
+    <thead>
+      <tr>
+        <th>股票代码</th>
+        <th>股票名称</th>
+        <th>信息熵</th>
+        <th>效用值</th>
+        <th>方差</th>
+        <th>偏度</th>
+        <th>标准化信息熵</th>
+        <th>标准化效用值</th>
+        <th>标准化方差</th>
+        <th>标准化偏度</th>
+        <th>EV</th>
+        <th>EVS</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for index, row in riskitems.iterrows() %}
+      <tr>
+        <th>{{ row['stockid'] }}</th>
+        <td>{{ row['stockname'] }}</td>
+        <td>{{ (row['entropy']) }}</td>
+        <td>{{ (row['utility']) }}</td>
+        <td>{{ (row['variance']) }}</td>
+        <td>{{ (row['skewness']) }}</td>
+        <td>{{ (row['s_entropy']) }}</td>
+        <td>{{ (row['s_utility']) }}</td>
+        <td>{{ (row['s_variance']) }}</td>
+        <td>{{ (row['s_skewness']) }}</td>
+        <td>{{ (row['e_v']) }}</td>
+        <td>{{ (row['e_v_s']) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="container">
+  <h2>股票收益率基本统计信息</h2>
+  <div id="rateschart" class="container" style="width: 100%; height: 400px"></div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>股票代码</th>
+        <th>股票名称</th>
+        <th>标准化信息熵</th>
+        <th>标准化效用值</th>
+        <th>标准化方差</th>
+        <th>标准化偏度</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for index, row in riskitems.iterrows() %}
+      <tr>
+        <th>{{ row['stockid'] }}</th>
+        <td>{{ row['stockname'] }}</td>
+        <td>{{ (row['s_entropy']) | round(4) }}</td>
+        <td>{{ (row['s_utility']) | round(4) }}</td>
+        <td>{{ (row['s_variance']) | round(4) }}</td>
+        <td>{{ (row['s_skewness']) | round(4) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<div class="container">
+  <h2>EU-E族模型风险值</h2>
+  <div id="riskpic" class="container" style="width: 100%; height: 400px;"></div>
+  <div class="row mb-3">
+    <label for="lam" class="col-sm-1 form-label d-flex justify-content-center text-primary-emphasis bg-primary-subtle border border-primary-subtle rounded-3">&lambda; = <span id="showlam"></span></label>
+    <div class="col-sm-6">
+      <input required type="range" class="form-range" id="lam" name="lam" min="0" max="1" step="0.01" onchange="lamchange()">
+    </div>
+    <div class="col-sm-2">
+      <select id="riskengine" class="form-select" aria-label="Default select example">
+        <option selected value="eue">EU-E</option>
+        <option value="neue">Normalized EU-E</option>
+        <option value="euev">EU-EV</option>
+        <option value="euevs">EU-EVS</option>
+      </select>
+    </div>
+    <div class="col-sm-2">
+      <input required type="number" value="1" id="stocknum" class="form-control" placeholder="投资股票数目" oninput="len=document.getElementById('risktable').rows.length-1;if(value>len)value=len;if(value<1)value=1">
+    </div>
+    <div class="col-sm-1">
+      <button class="btn btn-primary" onclick="analysis()">分析</button>
+    </div>
+  </div>
+  <div class="container">
+    <table class="table" id="risktable">
+      <thead>
+        <th>股票代码</th>
+        <th>股票名称</th>
+        <th>EU-E</th>
+        <th>Normalized EU-E</th>
+        <th>EU-EV</th>
+        <th>EU-EVS</th>
+      </thead>
+      <tbody>
+        {% for index, row in riskitems.iterrows() %}
+        <tr>
+          <th>{{ row['stockid'] }}</th>
+          <td>{{ row['stockname'] }}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<div id="portfolio" class="container" style="width: 100%; height: 400px;"></div>
+<div>
+  <script>
+    function ratesdiagram() {
+      var ratesdata = {{ ratesjson | tojson }};
+      var kdedata = {{ kdejson | tojson}};
+      var data = [];
+      stockidlis = Object.keys(ratesdata);
+      var lenlis = stockidlis.length;
+      for (var i = 0; i < lenlis; i++) {
+        datadic = {
+          x: ratesdata[stockidlis[i]],
+          name: stockidlis[i],
+          legendgroup: stockidlis[i],
+          type: "histogram",
+          histnorm: "probability density",
+          opacity: 0.5,
+          xbins: {
+            //start: -0.09,
+            size: 0.01,
+            //end: 0.09,
+          },
+        };
+        data.push(datadic);
+        datadic_2 = {
+          x: kdedata['x'],
+          y: kdedata[stockidlis[i]],
+          name: stockidlis[i],
+          legendgroup: stockidlis[i],
+          type: 'scatter',
+        };
+        data.push(datadic_2);
+      };
+      var layout = {
+        barmode: "overlay",
+        showlegend: true,
+        legend: {
+          x: 1,
+          y: 1,
+          xanchor: "right",
+        },
+      };
+      Plotly.newPlot('rateschart', data, layout);
+    }
+
+    function lamchange() {
+      var myTable = document.getElementById("risktable");
+      var myData = document.getElementById("riskdata");
+      var lam = document.getElementById("lam").value;
+      document.getElementById('showlam').innerHTML = lam;
+      lam = Number(lam);
+      var rows = myTable.rows.length;
+      // var cols = myTable.rows[1].cells.length;
+      var stocknamelis = new Array();
+      var euelis = new Array();
+      var neuelis = new Array();
+      var euevlis = new Array();
+      var euevslis = new Array();
+      for (var i = 0; i < rows - 1 ; i++) {
+        var stockname = myData.rows[i + 1].cells[1].innerHTML;           // stock name
+        var entropy = Number(myData.rows[i + 1].cells[2].innerHTML);     // entropy
+        var s_entropy = Number(myData.rows[i + 1].cells[6].innerHTML);   // standard entropy
+        var s_utility = Number(myData.rows[i + 1].cells[7].innerHTML);   // standard utility
+        var s_variance = Number(myData.rows[i + 1].cells[8].innerHTML);  // standard variance
+        var s_skewness = Number(myData.rows[i + 1].cells[9].innerHTML);  // standard skewness
+        var e_v = Number(myData.rows[i + 1].cells[10].innerHTML);        // standard entropy & variance
+        var e_v_s = Number(myData.rows[i + 1].cells[11].innerHTML);      // standard entropy & variance & skewness
+        eue = lam * entropy - (1 - lam) * s_utility;       // EU-E
+        neue = lam * s_entropy - (1 - lam) * s_utility;    // Normalized EU-E
+        euev = lam * e_v - (1 - lam) * s_utility;          // EU-EV
+        euevs = lam * e_v_s - (1 - lam) * s_utility;       // EU-EVS
+        myTable.rows[i + 1].cells[2].innerHTML = eue.toFixed(4);         // EU-E
+        myTable.rows[i + 1].cells[3].innerHTML = neue.toFixed(4);        // Normalized EU-E
+        myTable.rows[i + 1].cells[4].innerHTML = euev.toFixed(4);        // EU-EV
+        myTable.rows[i + 1].cells[5].innerHTML = euevs.toFixed(4);       // EU-EVS
+        stocknamelis.push(stockname);
+        euelis.push(eue);
+        neuelis.push(neue);
+        euevlis.push(euev);
+        euevslis.push(euevs);
+      }
+      var myChart = echarts.init(document.getElementById('riskpic'));
+      var myOption = {
+        xAxis: {
+          type: 'category',
+          data: stocknamelis,
+        },
+        yAxis: {
+          type: 'value'
+        },
+        toolbox: {
+          show: true,
+        },
+        series: [
+          {
+            data: euelis,
+            name: 'EU-E',
+            type: 'line'
+          },
+          {
+            data: neuelis,
+            name: 'Normalized EU-E',
+            type: 'line'
+          },
+          {
+            data: euevlis,
+            name: 'EU-EV',
+            type: 'line'
+          },
+          {
+            data: euevslis,
+            name: 'EU-EVS',
+            type: 'line'
+          }
+        ]
+      };
+      myChart.setOption(myOption);
+    }
+
+    function analysis() {
+      var myTable = document.getElementById("risktable");
+      var lam = document.getElementById("lam").value;
+      var riskselect = document.getElementById("riskengine");
+      var engine = riskselect.options[riskselect.selectedIndex].value;
+      var stocknum = document.getElementById("stocknum").value;
+      var rows = myTable.rows.length;
+      lam = Number(lam);
+      var stockrisks = {};
+      var engineindex = 0;
+      if ( engine == "eue" ) { engineindex = 2 }
+      else if ( engine == "neue" ) { engineindex = 3 }
+      else if ( engine == "euev" ) { engineindex = 4 }
+      else if ( engine == "euevs" ) { engineindex = 5 };
+      for (var i = 0; i < rows - 1; i++) {
+        stock = myTable.rows[i + 1].cells[0].innerHTML;
+        risk = Number(myTable.rows[i + 1].cells[engineindex].innerHTML);
+        stockrisks[stock] = risk;
+      };
+      var postData = {};
+      postData['stockrisks'] = stockrisks;
+      postData['lam'] = lam;
+      postData['engine'] = engine;
+      postData['stocknum'] = stocknum;
+      postData['days'] = "{{ days }}"
+      $.ajax({
+        type: "POST",
+        url: "{{ url_for('main.stock_portfolio') }}",
+        data: JSON.stringify(postData),
+        dataType: "json",
+        async: true,
+        contentType: "application/json",
+        success: function (response) {
+          //var newPage = window.open("", "_blank");
+          //newPage.document.body.innerHTML = JSON.stringify(response);
+          var krl = [];
+          var max = "";
+          maxindex = "";
+          for (var i = 0; i < response[0].length; i++){
+            kr = (response[0][i][1] - 0.00003) / response[0][i][0];
+            krl.push(kr);
+            if ( max === "" ) { max = kr; maxindex = i; }
+            else if ( kr > max ) { max = kr; maxindex = i; }
+          }
+          console.log(maxindex);
+          var portfolio = document.getElementById("portfolio");
+          var myChart = echarts.init(portfolio);
+          var myOption = {
+            xAxis: {
+              scale: true,
+            },
+            yAxis: {
+              scale: true,
+            },
+            legend: {
+              show: true,
+            },
+            tooltip: {
+              trigger: "item",
+              formatter: function (params){
+                var s = "";
+                s += "方差：" + params.data[0].toFixed(5).toString() + "</br>";
+                console.log(params);
+                s += "收益：" + params.data[1].toFixed(5).toString() + "</br>";
+                for (var i = 0; i < response[1].length; i++) {
+                  s += response[1][i] + "&nbsp;&nbsp;" + params.data[2][i].toFixed(5).toString() + "</br>";
+                }
+                return s;
+              }
+            },
+            series: [{
+              name: "Efficient Frontier",
+              symbolSize: 5,
+              data: response[0],
+              type: 'scatter',
+            },
+            {
+              name: "Capital Market Line",
+              data: [
+                [0, 0.00003],
+                [response[0][maxindex][0], response[0][maxindex][1]]
+              ],
+              type: "line",
+            }]
+          }
+          myChart.setOption(myOption);
+        },
+      });
+    }
+
+    ratesdiagram();
+    lamchange();
+  </script>
+</div>
+
+{% endblock %}

@@ -1,0 +1,120 @@
+{% for mc in mcoms %}
+<div class="card w-100 mb-3 text-bg-light">
+  <div class="card-body">
+    <div class="col-sm-12">
+      <p class="fs-4">{{ mc.user.username }}</p>
+      <p>{{ mc.content }}</p>
+      <p>
+        发表于{{ (mc.comtime + td).strftime('%Y-%m-%d %H:%M:%S') }}&nbsp;
+        <a id="comment-{{ mc.commentid }}-reply-main-btn" data-username="{{ mc.user.username }}" href="javascript:void(0)" onclick="displayTextArea()">回复</a>
+      </p>
+    </div>
+    {% if mc.replied is defined %}
+      {% for reply in mc.replied %}
+      <div class="row mb-3">
+        <div class="col-sm-1"></div>
+        <div class="col-sm-11">
+          <p>{{ reply.user.username }}</p>
+          <p>
+            {% if reply.directreplyobject %}
+            回复@{{ reply.directreplyobject.user.username }}:
+            {% endif %}
+            {{ reply.content }}
+          </p>
+          <p>
+            发表于{{ (reply.comtime + td).strftime('%Y-%m-%d %H:%M:%S') }}&nbsp;
+            <a id="comment-{{ mc.commentid }}-reply-{{ reply.commentid }}-btn" data-username="{{ reply.user.username }}" href="javascript:void(0)" onclick="displayTextArea()" style="display: inline;">回复</a>
+          </p>
+        </div>
+      </div>
+      {% endfor %}
+    {% endif %}
+    <div id="comment-{{ mc.commentid }}-replydiv" name="comment-replydiv" data-on="n" data-replyNow="main" class="row mb-3 align-items-end" style="display: none;">
+      <div class="col-sm-10">
+        <textarea class="form-control" id="comment-{{ mc.commentid }}-textarea" onchange="commentbtnstatus()"></textarea>
+      </div>
+      <div class="col-sm-2 align-bottom">
+        <button class="btn btn-primary" id="comment-{{ mc.commentid }}-submit" disabled onclick="submitComment()">回复</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor%}
+
+<script>
+  function displayTextArea() {
+    var replyBtn = event.currentTarget;
+    var repliedUsername = replyBtn.getAttribute('data-username');
+    var replyBtnId = replyBtn.id;
+    var commentAttrLis = replyBtnId.split("-");
+    var replyDivId = `comment-${commentAttrLis[1]}-replydiv`;
+    var replyDivThis = document.getElementById(replyDivId);
+    if ( replyDivThis.style.display === "none" ) {
+      replyDivThis.style.display = "";
+      replyDivThis.setAttribute("data-on","y");
+      replyDivThis.setAttribute("data-replyNow",commentAttrLis[3]);
+    }
+    else {
+      if ( replyDivThis.getAttribute("data-replyNow") === commentAttrLis[3] ) {
+        replyDivThis.style.display = "none";
+        replyDivThis.setAttribute("data-on","n");
+      }
+      else {
+        replyDivThis.setAttribute("data-replyNow",commentAttrLis[3])
+      }
+    }
+    var replyDivAll = document.getElementsByName("comment-replydiv")
+    for (var index = 0; index < replyDivAll.length; index++) {
+      if ( replyDivAll[index].id !== replyDivThis.id && replyDivAll[index].style.display !== "none") {
+        replyDivAll[index].style.display = "none";
+        replyDivAll[index].setAttribute("data-on","n");
+      }
+    }
+    var replyTextAreaThis = document.getElementById(`comment-${commentAttrLis[1]}-textarea`);
+    replyTextAreaThis.setAttribute("placeholder",`回复@${repliedUsername}:`);
+    var replySubmitThis = document.getElementById(`comment-${commentAttrLis[1]}-submit`);
+    replySubmitThis.setAttribute("data-reply", commentAttrLis[1]);
+    replySubmitThis.setAttribute("data-directreply", commentAttrLis[3]);
+  }
+
+  function commentbtnstatus() {
+    var replyDivOn = document.querySelector("div[data-on  = 'y']")
+    if (replyDivOn) {
+      var replyTextAreaOn = replyDivOn.firstElementChild.firstElementChild;
+      var replySubmitOn = replyDivOn.lastElementChild.firstElementChild;
+      var len = replyTextAreaOn.value.length;
+      if (len == 0) { replySubmitOn.disabled = true; }
+      else { replySubmitOn.disabled = false; }
+    }
+    
+  }
+
+  function submitComment() {
+    var stockid = "{{ stock.stockid }}";
+    var replyDivOn = document.querySelector("div[data-on  = 'y']");
+    if (replyDivOn) {
+      var replyTextAreaOn = replyDivOn.firstElementChild.firstElementChild;
+      var replySubmitOn = replyDivOn.lastElementChild.firstElementChild;
+      var content = replyTextAreaOn.value;
+      var postData = {};
+      postData['stockid'] = stockid;
+      postData['content'] = content;
+      postData['reply'] = replySubmitOn.getAttribute("data-reply");
+      postData['directreply'] = replySubmitOn.getAttribute("data-directreply");
+      $.ajax({
+        type: "POST",
+        url: "{{ url_for('main.stock_comment', stockid = stock.stockid) }}",
+        data: JSON.stringify(postData),
+        dataType: "json",
+        async: false,
+        contentType: "application/json",
+        success: function (data) {
+          //console.log(data);
+          loadComment();
+          replyTextAreaOn.value = "";
+          replySubmitOn.disabled = true;
+        }
+      })
+    }
+  }
+</script>

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% import "bootstrap/wtf.html" as wtf %}
+
+
+{% block content %}
+
+<div class="container">
+  <form class="form" method="post">
+    {{ form.hidden_tag() }}
+    <div class="row mb-3">
+      <label for="email" class="col-sm-2 col-form-label">{{ form.email.label }}</label>
+      <div class="col-sm-8">{{ form.email(type='email', class='form-control', id='email') }}</div>
+      {% if (form.email.errors | length) != 0 %}
+      <div class="col-sm-2 p-3 text-danger-emphasis bg-danger-subtle border border-danger-subtle rounded-3">
+          {% for error in form.email.errors %}
+            {{ error }}<br>
+          {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="row mb-3">
+      <label for="username" class="col-sm-2 col-form-label">{{ form.username.label }}</label>
+      <div class="col-sm-8">{{ form.username(type='text', class='form-control', id='username') }}</div>
+      {% if (form.username.errors | length) != 0 %}
+      <div class="col-sm-2 p-3 text-danger-emphasis bg-danger-subtle border border-danger-subtle rounded-3">
+          {% for error in form.username.errors %}
+            {{ error }}<br>
+          {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="row mb-3">
+      <label for="password" class="col-sm-2 col-form-label">{{ form.password.label }}</label>
+      <div class="col-sm-8">{{ form.password(type='password', class='form-control', id='password') }}</div>
+      {% if (form.password.errors | length) != 0 %}
+      <div class="col-sm-2 p-3 text-danger-emphasis bg-danger-subtle border border-danger-subtle rounded-3">
+        {% for error in form.password.errors %}
+          {{ error }}<br>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="row mb-3">
+      <label for="passwordcon" class="col-sm-2 col-form-label">{{ form.passwordcon.label }}</label>
+      <div class="col-sm-8">{{ form.passwordcon(type='password', class='form-control', id='passwordcon') }}</div>
+      {% if (form.passwordcon.errors | length) != 0 %}
+      <div class="col-sm-2 p-3 text-danger-emphasis bg-danger-subtle border border-danger-subtle rounded-3">
+        {% for error in form.passwordcon.errors %}
+          {{ error }}<br>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="row mb-3">
+      <div class="col-sm-12">{{ form.submit(class='btn btn-primary') }}</div>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
